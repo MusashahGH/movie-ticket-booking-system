@@ -41,7 +41,7 @@ for m_id in movies:
 bookings = {}
 booking_counter = 1000
 def init_db(): ## SQL Create
-    global conn, cursor
+    global conn, cursor, booking_counter
     conn = sqlite3.connect("movie_tickets.db")
     cursor = conn.cursor()
     cursor.execute("""
@@ -56,6 +56,14 @@ def init_db(): ## SQL Create
         )
     """)
     conn.commit()
+    
+    # Load the highest booking ID from database to avoid duplicates
+    cursor.execute("SELECT MAX(booking_id) FROM bookings")
+    result = cursor.fetchone()[0]
+    if result:
+        booking_counter = int(result[2:]) if result.startswith("BK") else 1000
+    else:
+        booking_counter = 1000
 
 
 def clear_screen():
@@ -159,16 +167,16 @@ def select_seats(m_id, show_time):
     return parsed
 
 
-def confirm_booking(m_id, show_time, seats):
+def confirm_bookings(m_id, show_time, seats):
     grid = seat_maps[m_id][show_time]
     price = movies[m_id]["price"]
     total = price * len(seats)
 
     print_header("CONFIRM BOOKING")
-    print(f"Movie   : {movies[m_id]['title']}")
-    print(f"Show    : {show_time}")
-    print(f"Seats   : {', '.join(s[2] for s in seats)}")
-    print(f"Price   : Rs.{price} x {len(seats)} = Rs.{total}")
+    print(f"Movie : {movies[m_id]['title']}")
+    print(f"Show : {show_time}")
+    print(f"Seats : {', '.join(s[2] for s in seats)}")
+    print(f"Price : Rs.{price} x {len(seats)} = Rs.{total}")
 
     name = input("\nEnter your name: ").strip()
     if not name:
@@ -176,9 +184,10 @@ def confirm_booking(m_id, show_time, seats):
 
     confirm = input("Confirm booking? (y/n): ").strip().lower()
     if confirm != "y":
-        print("Booking cancelled.")
-        pause()
-        return
+        print("Booking cancelled.")  
+        pause()  
+        return  
+
 
     global booking_counter
     booking_counter += 1
@@ -230,7 +239,7 @@ def book_ticket_flow():
     seats = select_seats(m_id, show_time)
     if not seats:
         return
-    confirm_booking(m_id, show_time, seats)
+    confirm_bookings(m_id, show_time, seats)
 
 
 def view_bookings():
