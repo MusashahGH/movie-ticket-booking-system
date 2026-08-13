@@ -1,6 +1,7 @@
 import os
 import sys
 import sqlite3 ## SQL Connection
+from google import genai ## chatbot
 from datetime import datetime
 
 movies = {
@@ -65,6 +66,28 @@ def init_db(): ## SQL Create
     else:
         booking_counter = 1000
 
+
+def init_chatbot(): ## chatbot call
+    global client
+    client = genai.Client()
+
+def get_live_context():
+    cursor.execute("SELECT COUNT(*) FROM bookings")
+    total_bookings = cursor.fetchone()[0]
+
+    movie_list_text = "\n".join(
+        f"{m_id}: {info['title']} ({info['language']}) - Rs.{info['price']} - Shows: {', '.join(shows[m_id])}"
+        for m_id, info in movies.items()
+    )
+
+    return f"""You are a helpful assistant for a movie ticket booking system.
+
+Current movies available:
+{movie_list_text}
+
+Total bookings made so far: {total_bookings}
+
+Answer questions about movies, prices, showtimes, and how to book tickets. Keep answers short and friendly. For live seat availability, tell them to use menu option 3."""
 
 def clear_screen():
     os.system("cls" if os.name == "nt" else "clear")
@@ -311,6 +334,34 @@ def view_seat_availability():
     print_seat_map(seat_maps[m_id][show_time])
     pause()
 
+def chat_with_assistant(): ## chatbot
+    print_header("MOVIE ASSISTANT CHATBOT")
+    print("Movies, prices, ya showtimes ke baare mein kuch bhi pucho. Wapas jaane ke liye 'exit' likho.\n")
+
+    system_prompt = get_live_context()
+
+    chat = client.chats.create( ##chatbot
+        model="gemini-flash-latest",
+        config={"system_instruction": system_prompt},
+    )
+
+    while True:
+        user_input = input("You: ").strip()
+        if user_input.lower() == "exit":
+            break
+        if not user_input:
+            continue
+
+        print("Assistant is typing...")
+
+        try:
+            response = chat.send_message(user_input)
+            print(f"\nAssistant: {response.text}\n")
+        except Exception as e:
+            print(f"\n[Error: {e}]\n")
+
+    pause()
+
 
 def main_menu():
     while True:
@@ -320,7 +371,8 @@ def main_menu():
         print("3. View Seat Availability")
         print("4. View All Bookings")
         print("5. Cancel Booking")
-        print("6. Exit")
+        print("6. Chat with Movie Assistant")
+        print("7. Exit")
 
         choice = input("\nEnter your choice: ").strip()
 
@@ -336,6 +388,8 @@ def main_menu():
         elif choice == "5":
             cancel_booking()
         elif choice == "6":
+            chat_with_assistant()
+        elif choice == "7":
             print("\nThank you for using the booking system. Goodbye!")
             sys.exit()
         else:
@@ -345,4 +399,5 @@ def main_menu():
 
 if __name__ == "__main__":
     init_db() ## for SQL
+    init_chatbot() ## for chatbot
     main_menu()
