@@ -1,6 +1,6 @@
 # 🎬 Movie Ticket Booking System
 
-A comprehensive command-line movie ticket booking system with real-time seat availability tracking and persistent data storage.
+A comprehensive command-line movie ticket booking system with real-time seat availability tracking, persistent data storage, and **AI-powered chatbot assistant**.
 
 ## ✨ Features
 
@@ -11,6 +11,7 @@ A comprehensive command-line movie ticket booking system with real-time seat ava
 - **Persistent Storage** - SQLite database for storing booking records
 - **Multiple Showtimes** - Each movie has multiple showtimes throughout the day
 - **Seat Management** - Visual seat map with real-time availability updates
+- **🤖 AI Chatbot Assistant** - Google Gemini-powered assistant to answer questions about movies, prices, and showtimes
 
 ## 🗂️ Movie Database
 
@@ -48,21 +49,55 @@ Each movie has multiple showtimes throughout the day:
 - Format: `[Row Letter][Column Number]`
 - Examples: `A1`, `B5`, `H10`
 
+## 🤖 AI Chatbot Assistant
+
+The system includes a **Google Gemini-powered AI chatbot** that can help users with:
+
+- **Movie Information** - Get details about any movie
+- **Price Queries** - Check ticket prices
+- **Showtime Information** - Find showtimes for movies
+- **Booking Assistance** - Get help with the booking process
+- **General Questions** - Ask anything about the cinema system
+
+### How to Use Chatbot
+1. Select option **"6. Chat with Movie Assistant"** from main menu
+2. Ask questions like:
+   - "Which movies are showing?"
+   - "What is the price of Spider-Man?"
+   - "Show me showtimes for The Odyssey"
+   - "How do I book a ticket?"
+3. Type `exit` to return to main menu
+
 ## 🚀 Installation & Setup
 
 ### Prerequisites
 - Python 3.x
 - SQLite3 (built-in with Python)
+- **Google Gemini API Key** (for chatbot feature)
 
 ### Steps
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/yourusername/movie-ticket-booking-system.git
+git clone https://github.com/MusashahGH/movie-ticket-booking-system.git
 cd movie-ticket-booking-system
 ```
 
-2. **Run the application**
+2. **Install required packages**
+```bash
+pip install google-generativeai
+```
+
+3. **Set up Gemini API Key**
+```bash
+# On Windows
+setx GOOGLE_API_KEY "your-api-key-here"
+
+# On Linux/Mac
+export GOOGLE_API_KEY="your-api-key-here"
+```
+
+4. **Run the application**
 ```bash
 python movie_ticket_code.py
 ```
@@ -91,7 +126,10 @@ python movie_ticket_code.py
    - Enter the Booking ID to cancel
    - Seats will be released automatically
 
-6. **Exit**
+6. **Chat with Movie Assistant** ✨ NEW
+   - AI-powered chatbot to answer your questions
+
+7. **Exit**
    - Close the application
 
 ### Booking Process
@@ -120,6 +158,7 @@ CREATE TABLE bookings (
 
 ## 🎯 Example Workflow
 
+### Booking Tickets
 ```bash
 1. Run the program
 2. Select "2. Book Ticket"
@@ -129,6 +168,17 @@ CREATE TABLE bookings (
 6. Enter name: John Doe
 7. Confirm: y
 8. Booking confirmed with ID: BK1001
+```
+
+### Using Chatbot
+```bash
+1. Select "6. Chat with Movie Assistant"
+2. You: Which movies are available?
+3. Assistant: Here are the currently showing movies...
+4. You: Show me showtimes for Spider-Man
+5. Assistant: Spider-Man showtimes are...
+6. You: exit
+7. Returns to main menu
 ```
 
 ## 📝 Booking ID Format
@@ -145,6 +195,7 @@ The system handles various error cases:
 - Out-of-range seat selection
 - Invalid seat formats
 - Non-existent booking IDs for cancellation
+- API errors in chatbot
 
 ## 🔧 Technical Details
 
@@ -153,9 +204,13 @@ The system handles various error cases:
 - `sys` - For system operations
 - `sqlite3` - For database management
 - `datetime` - For timestamp generation
+- `google.generativeai` - For AI chatbot integration
 
 ### Key Functions
 - `init_db()` - Initialize SQLite database
+- `init_chatbot()` - Initialize Gemini chatbot
+- `chat_with_assistant()` - AI chatbot conversation
+- `get_live_context()` - Get real-time context for chatbot
 - `book_ticket_flow()` - Main booking workflow
 - `view_bookings()` - Display all bookings
 - `cancel_booking()` - Cancel existing bookings
@@ -166,6 +221,7 @@ The system handles various error cases:
 - All bookings are stored in `movie_tickets.db`
 - The database persists between program runs
 - Seat availability is maintained across sessions
+- Booking counter loads from database on startup
 
 ## 📌 Notes
 
@@ -173,6 +229,7 @@ The system handles various error cases:
 - Bookings are saved to SQLite for permanent storage
 - The seat map resets when the program restarts
 - Booking history is preserved in the database
+- Gemini API requires internet connection for chatbot
 
 ## 🤝 Contributing
 
