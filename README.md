@@ -12,6 +12,8 @@ A comprehensive command-line movie ticket booking system with real-time seat ava
 - **Multiple Showtimes** - Each movie has multiple showtimes throughout the day
 - **Seat Management** - Visual seat map with real-time availability updates
 - **🤖 AI Chatbot Assistant** - Google Gemini-powered assistant to answer questions about movies, prices, and showtimes
+- **🔐 Admin Panel** - Secure admin access to manage movies (Add/Update)
+- **👤 Role-Based Access** - Separate interfaces for Admin and User
 
 ## 🗂️ Movie Database
 
@@ -60,13 +62,46 @@ The system includes a **Google Gemini-powered AI chatbot** that can help users w
 - **General Questions** - Ask anything about the cinema system
 
 ### How to Use Chatbot
-1. Select option **"6. Chat with Movie Assistant"** from main menu
+1. Select option **"6. Chat with Movie Assistant"** from user menu
 2. Ask questions like:
    - "Which movies are showing?"
    - "What is the price of Spider-Man?"
    - "Show me showtimes for The Odyssey"
    - "How do I book a ticket?"
 3. Type `exit` to return to main menu
+
+## 🔐 Admin Panel
+
+The system includes a secure admin panel for managing movies:
+
+### Admin Features
+- **Add Movie** - Add new movies with title, language, price, and showtimes
+- **Update Movie** - Modify existing movie details
+- **View All Movies** - See complete movie list
+
+### ⚠️ Admin Login Credentials
+```
+🔑 Password: admin123
+```
+
+> **Note:** Access from main menu by selecting **"1. Admin"**
+
+## 👤 Role-Based Access
+
+The system now supports two user roles:
+
+### 1. Admin
+- Access to admin panel
+- Add and update movies
+- Manage movie database
+
+### 2. User
+- Browse movies
+- Book tickets
+- View seat availability
+- View bookings
+- Cancel bookings
+- Chat with AI assistant
 
 ## 🚀 Installation & Setup
 
@@ -104,33 +139,25 @@ python movie_ticket_code.py
 
 ## 💻 How to Use
 
-### Main Menu Options
+### Main Menu (Role Selection)
+1. **Admin** - Enter admin password to manage movies
+2. **User** - Access booking features
+3. **Exit** - Close the application
 
-1. **View Movies**
-   - Display all available movies with details
+### Admin Menu Options
+1. **Add Movie** - Add new movie to database
+2. **Update Movie** - Modify existing movie details
+3. **View All Movies** - Display complete movie list
+4. **Back to Main Menu** - Return to role selection
 
-2. **Book Ticket**
-   - Select a movie by ID
-   - Choose a showtime
-   - Enter seat numbers (e.g., `A1,A2,B5`)
-   - Confirm booking with your name
-
-3. **View Seat Availability**
-   - Select a movie and showtime
-   - View the current seat map
-
-4. **View All Bookings**
-   - Display all booking records from the database
-
-5. **Cancel Booking**
-   - Enter the Booking ID to cancel
-   - Seats will be released automatically
-
-6. **Chat with Movie Assistant** ✨ NEW
-   - AI-powered chatbot to answer your questions
-
-7. **Exit**
-   - Close the application
+### User Menu Options
+1. **View Movies** - Display all available movies with details
+2. **Book Ticket** - Interactive seat selection with visual seat map
+3. **View Seat Availability** - Check available seats for any showtime
+4. **View All Bookings** - Display all booking records from the database
+5. **Cancel Booking** - Enter the Booking ID to cancel (seats released automatically)
+6. **Chat with Movie Assistant** - AI-powered chatbot to answer your questions
+7. **Exit** - Close the application
 
 ### Booking Process
 
@@ -145,15 +172,26 @@ python movie_ticket_code.py
 The system uses SQLite with the following table structure:
 
 ```sql
+-- Bookings table
 CREATE TABLE bookings (
     booking_id TEXT PRIMARY KEY,
     name TEXT,
+    movie_id TEXT,
     movie TEXT,
     show_time TEXT,
     seats TEXT,
     total INTEGER,
     timestamp TEXT
-)
+);
+
+-- Movies table (for admin management)
+CREATE TABLE movies (
+    movie_id TEXT PRIMARY KEY,
+    title TEXT,
+    language TEXT,
+    price INTEGER,
+    show_times TEXT
+);
 ```
 
 ## 🎯 Example Workflow
@@ -161,24 +199,39 @@ CREATE TABLE bookings (
 ### Booking Tickets
 ```bash
 1. Run the program
-2. Select "2. Book Ticket"
-3. Enter Movie ID: 1
-4. Select show number: 1 (for 10:00 AM)
-5. Enter seats: A1,A2
-6. Enter name: John Doe
-7. Confirm: y
-8. Booking confirmed with ID: BK1001
+2. Select "2. User"
+3. Select "2. Book Ticket"
+4. Enter Movie ID: 1
+5. Select show number: 1 (for 10:00 AM)
+6. Enter seats: A1,A2
+7. Enter name: John Doe
+8. Confirm: y
+9. Booking confirmed with ID: BK1001
+```
+
+### Admin - Add Movie
+```bash
+1. Run the program
+2. Select "1. Admin"
+3. Enter password: admin123
+4. Select "1. Add Movie"
+5. Enter Movie Title: New Movie
+6. Enter Language: English
+7. Enter Price: 750
+8. Enter Show times: 10:00 AM,02:00 PM,06:00 PM
+9. Movie added successfully!
 ```
 
 ### Using Chatbot
 ```bash
-1. Select "6. Chat with Movie Assistant"
-2. You: Which movies are available?
-3. Assistant: Here are the currently showing movies...
-4. You: Show me showtimes for Spider-Man
-5. Assistant: Spider-Man showtimes are...
-6. You: exit
-7. Returns to main menu
+1. Select "2. User"
+2. Select "6. Chat with Movie Assistant"
+3. You: Which movies are available?
+4. Assistant: Here are the currently showing movies...
+5. You: Show me showtimes for Spider-Man
+6. Assistant: Spider-Man showtimes are...
+7. You: exit
+8. Returns to main menu
 ```
 
 ## 📝 Booking ID Format
@@ -196,6 +249,8 @@ The system handles various error cases:
 - Invalid seat formats
 - Non-existent booking IDs for cancellation
 - API errors in chatbot
+- Invalid admin password
+- Duplicate movie entries
 
 ## 🔧 Technical Details
 
@@ -207,7 +262,7 @@ The system handles various error cases:
 - `google.generativeai` - For AI chatbot integration
 
 ### Key Functions
-- `init_db()` - Initialize SQLite database
+- `init_db()` - Initialize SQLite database with both tables
 - `init_chatbot()` - Initialize Gemini chatbot
 - `chat_with_assistant()` - AI chatbot conversation
 - `get_live_context()` - Get real-time context for chatbot
@@ -215,21 +270,28 @@ The system handles various error cases:
 - `view_bookings()` - Display all bookings
 - `cancel_booking()` - Cancel existing bookings
 - `print_seat_map()` - Display visual seat layout
+- `add_movie()` - Add new movie (Admin)
+- `update_movie()` - Update existing movie (Admin)
+- `admin_login()` - Secure admin authentication
+- `role_menu()` - Role-based access control
 
 ## 🔄 Data Persistence
 
 - All bookings are stored in `movie_tickets.db`
+- Movies are stored in `movies` table for admin management
 - The database persists between program runs
 - Seat availability is maintained across sessions
 - Booking counter loads from database on startup
+- Movie data loads from database on startup
 
 ## 📌 Notes
 
-- The system uses in-memory seat maps initialized at startup
+- The system uses in-memory seat maps initialized from database
 - Bookings are saved to SQLite for permanent storage
 - The seat map resets when the program restarts
 - Booking history is preserved in the database
 - Gemini API requires internet connection for chatbot
+- Admin password can be changed in the code
 
 ## 🤝 Contributing
 
