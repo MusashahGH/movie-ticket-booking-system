@@ -1,6 +1,6 @@
 import os
 import sys
-import sqlite3 ## SQL Connection
+import sqlite3 ## SQL Connection1
 from google import genai ## chatbot
 from datetime import datetime
 
@@ -30,6 +30,7 @@ shows = {
     "10": ["11:00 AM", "03:00 PM", "07:00 PM"],
 }
 
+ADMIN_PASSWORD = "admin123" ## new
 ROWS = 8
 COLS = 10
 
@@ -49,11 +50,21 @@ def init_db(): ## SQL Create
         CREATE TABLE IF NOT EXISTS bookings (
             booking_id TEXT PRIMARY KEY,
             name TEXT,
+            movie_id TEXT,
             movie TEXT,
             show_time TEXT,
             seats TEXT,
             total INTEGER,
             timestamp TEXT
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS movies (
+            movie_id TEXT PRIMARY KEY,
+            title TEXT,
+            language TEXT,
+            price INTEGER,
+            show_times TEXT
         )
     """)
     conn.commit()
@@ -66,12 +77,39 @@ def init_db(): ## SQL Create
     else:
         booking_counter = 1000
 
+    load_movies_from_db()
+    sync_seat_maps_from_db()
+
+def load_movies_from_db(): ##new
+    cursor.execute("SELECT movie_id, title, language, price, show_times FROM movies")
+    rows = cursor.fetchall()
+    for movie_id, title, language, price, show_times in rows:
+        movies[movie_id] = {"title": title, "language": language, "price": price}
+        shows[movie_id] = show_times.split(", ")
+        seat_maps[movie_id] = {}
+        for show_time in shows[movie_id]:
+            seat_maps[movie_id][show_time] = [["O" for _ in range(COLS)] for _ in range(ROWS)]
+
+
+def sync_seat_maps_from_db():
+    cursor.execute("SELECT movie_id, show_time, seats FROM bookings")
+    rows = cursor.fetchall()
+    for movie_id, show_time, seats in rows:
+        if movie_id not in seat_maps or show_time not in seat_maps[movie_id]:
+            continue
+        grid = seat_maps[movie_id][show_time]
+        for s in seats.split(", "):
+            row = ord(s[0]) - 65
+            col = int(s[1:]) - 1
+            grid[row][col] = "X"
+
 
 def init_chatbot(): ## chatbot call
     global client
     client = genai.Client()
 
-def get_live_context():
+def get_live_context(): ## chatbot
+    
     cursor.execute("SELECT COUNT(*) FROM bookings")
     total_bookings = cursor.fetchone()[0]
 
@@ -228,10 +266,11 @@ def confirm_bookings(m_id, show_time, seats):
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
     }
     cursor.execute( ## SQL Insert 
-        "INSERT INTO bookings (booking_id, name, movie, show_time, seats, total, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO bookings (booking_id, name, movie_id, movie, show_time, seats, total, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         (
             booking_id,
             name,
+            m_id,
             movies[m_id]["title"],
             show_time,
             ", ".join(s[2] for s in seats),
@@ -334,6 +373,136 @@ def view_seat_availability():
     print_seat_map(seat_maps[m_id][show_time])
     pause()
 
+def add_movie(): ## new
+    print_header("ADD NEW MOVIE")
+    title = input("Movie Title: ").strip()
+    if not title:
+        print("Title cannot be empty.")
+        pause()
+        return
+
+    language = input("Language: ").strip()
+    if not language:
+        language = "English"
+
+    price_input = input("Price (Rs.): ").strip()
+    if not price_input.isdigit():
+        print("Invalid price.")
+        pause()
+        return
+    price = int(price_input)
+
+    show_input = input("Show times (comma se separate karo, e.g. 10:00 AM,02:00 PM): ").strip()
+    show_list = [s.strip() for s in show_input.split(",") if s.strip()]
+    if not show_list:
+        print("Kam se kam ek show time zaroori hai.")
+        pause()
+        return
+
+    new_id = str(max(int(m_id) for m_id in movies) + 1)
+
+    movies[new_id] = {"title": title, "language": language, "price": price}
+    shows[new_id] = show_list
+    seat_maps[new_id] = {}
+    for show_time in show_list:
+        seat_maps[new_id][show_time] = [["O" for _ in range(COLS)] for _ in range(ROWS)]
+
+    cursor.execute(
+        "INSERT INTO movies (movie_id, title, language, price, show_times) VALUES (?, ?, ?, ?, ?)",
+        (new_id, title, language, price, ", ".join(show_list)),
+    )
+    conn.commit()
+
+    print(f"\nMovie '{title}' add ho gayi, ID: {new_id}")
+    pause()
+
+
+def update_movie():
+    print_header("UPDATE MOVIE")
+    show_movies()
+    m_id = input("\nEnter Movie ID to update (or 0 to go back): ").strip()
+    if m_id == "0":
+        return
+    if m_id not in movies:
+        print("Invalid movie ID.")
+        pause()
+        return
+
+    current = movies[m_id]
+    print("\nBlank chhod do agar wo cheez change nahi karni (purani value rahegi).\n")
+
+    title = input(f"Title [{current['title']}]: ").strip()
+    if title:
+        current["title"] = title
+
+    language = input(f"Language [{current['language']}]: ").strip()
+    if language:
+        current["language"] = language
+
+    price_input = input(f"Price [{current['price']}]: ").strip()
+    if price_input:
+        if not price_input.isdigit():
+            print("Invalid price, purani price rakhi ja rahi hai.")
+        else:
+            current["price"] = int(price_input)
+
+    show_input = input(f"Show times [{', '.join(shows[m_id])}] (comma se separate karo, blank = no change): ").strip()
+    if show_input:
+        new_show_list = [s.strip() for s in show_input.split(",") if s.strip()]
+        old_grids = seat_maps[m_id]
+        new_grids = {}
+        for show_time in new_show_list:
+            if show_time in old_grids:
+                new_grids[show_time] = old_grids[show_time]
+            else:
+                new_grids[show_time] = [["O" for _ in range(COLS)] for _ in range(ROWS)]
+        shows[m_id] = new_show_list
+        seat_maps[m_id] = new_grids
+
+    cursor.execute(
+        "INSERT OR REPLACE INTO movies (movie_id, title, language, price, show_times) VALUES (?, ?, ?, ?, ?)",
+        (m_id, current["title"], current["language"], current["price"], ", ".join(shows[m_id])),
+    )
+    conn.commit()
+
+    print(f"\nMovie ID {m_id} update ho gayi.")
+    pause()
+
+
+def admin_login():
+    print_header("ADMIN LOGIN")
+    pwd = input("Enter admin password: ").strip()
+    if pwd != ADMIN_PASSWORD:
+        print("Incorrect password.")
+        pause()
+        return False
+    return True
+
+
+def admin_menu():
+    if not admin_login():
+        return
+    while True:
+        print_header("ADMIN PANEL")
+        print("1. Add Movie")
+        print("2. Update Movie")
+        print("3. View All Movies")
+        print("4. Back to Main Menu")
+        choice = input("\nEnter your choice: ").strip()
+
+        if choice == "1":
+            add_movie()
+        elif choice == "2":
+            update_movie()
+        elif choice == "3":
+            show_movies()
+            pause()
+        elif choice == "4":
+            break
+        else:
+            print("Invalid choice.")
+            pause()
+
 def chat_with_assistant(): ## chatbot
     print_header("MOVIE ASSISTANT CHATBOT")
     print("Movies, prices, ya showtimes ke baare mein kuch bhi pucho. Wapas jaane ke liye 'exit' likho.\n")
@@ -396,8 +565,28 @@ def main_menu():
             print("Invalid choice.")
             pause()
 
+def role_menu(): ## new
+    while True:
+        print_header("MOVIE TICKET BOOKING SYSTEM")
+        print("1. Admin")
+        print("2. User")
+        print("3. Exit")
+
+        choice = input("\nEnter your choice: ").strip()
+
+        if choice == "1":
+            admin_menu()
+        elif choice == "2":
+            main_menu()
+        elif choice == "3":
+            print("\nGoodbye!")
+            sys.exit()
+        else:
+            print("Invalid choice.")
+            pause()
+
 
 if __name__ == "__main__":
     init_db() ## for SQL
     init_chatbot() ## for chatbot
-    main_menu()
+    role_menu()
