@@ -541,7 +541,8 @@ def main_menu():
         print("4. View All Bookings")
         print("5. Cancel Booking")
         print("6. Chat with Movie Assistant")
-        print("7. Exit")
+        print("7. Back to Main Menu")
+        print("8. Exit")
 
         choice = input("\nEnter your choice: ").strip()
 
@@ -559,6 +560,8 @@ def main_menu():
         elif choice == "6":
             chat_with_assistant()
         elif choice == "7":
+            break
+        elif choice == "8":
             print("\nThank you for using the booking system. Goodbye!")
             sys.exit()
         else:
