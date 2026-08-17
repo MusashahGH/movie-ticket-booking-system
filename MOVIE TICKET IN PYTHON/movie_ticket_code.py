@@ -392,10 +392,10 @@ def add_movie(): ## new
         return
     price = int(price_input)
 
-    show_input = input("Show times (comma se separate karo, e.g. 10:00 AM,02:00 PM): ").strip()
+    show_input = input("Show times (comma-separated, e.g. 10:00 AM,02:00 PM): ").strip()
     show_list = [s.strip() for s in show_input.split(",") if s.strip()]
     if not show_list:
-        print("Kam se kam ek show time zaroori hai.")
+        print("At least one show time is required.")
         pause()
         return
 
@@ -413,7 +413,7 @@ def add_movie(): ## new
     )
     conn.commit()
 
-    print(f"\nMovie '{title}' add ho gayi, ID: {new_id}")
+    print(f"\nMovie '{title}' added successfully. ID: {new_id}")
     pause()
 
 
@@ -429,8 +429,7 @@ def update_movie():
         return
 
     current = movies[m_id]
-    print("\nBlank chhod do agar wo cheez change nahi karni (purani value rahegi).\n")
-
+    print("\nPress Enter without typing anything to keep the current value.\n")
     title = input(f"Title [{current['title']}]: ").strip()
     if title:
         current["title"] = title
@@ -442,11 +441,11 @@ def update_movie():
     price_input = input(f"Price [{current['price']}]: ").strip()
     if price_input:
         if not price_input.isdigit():
-            print("Invalid price, purani price rakhi ja rahi hai.")
+            print("Invalid price, keeping the previous price.")
         else:
             current["price"] = int(price_input)
 
-    show_input = input(f"Show times [{', '.join(shows[m_id])}] (comma se separate karo, blank = no change): ").strip()
+    show_input = input(f"Show times [{', '.join(shows[m_id])}] (comma-separated, leave blank = no change): ").strip()
     if show_input:
         new_show_list = [s.strip() for s in show_input.split(",") if s.strip()]
         old_grids = seat_maps[m_id]
@@ -465,7 +464,7 @@ def update_movie():
     )
     conn.commit()
 
-    print(f"\nMovie ID {m_id} update ho gayi.")
+    print(f"\nMovie ID {m_id} updated successfully.")
     pause()
 
 
@@ -505,7 +504,7 @@ def admin_menu():
 
 def chat_with_assistant(): ## chatbot
     print_header("MOVIE ASSISTANT CHATBOT")
-    print("Movies, prices, ya showtimes ke baare mein kuch bhi pucho. Wapas jaane ke liye 'exit' likho.\n")
+    print("Ask me anything about movies, prices, or showtimes. Type 'exit' to go back.\n")
 
     system_prompt = get_live_context()
 
